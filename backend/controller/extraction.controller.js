@@ -1,4 +1,4 @@
-import { YtDlp } from 'ytdlp-nodejs';
+import { execSync } from 'child_process';
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -30,39 +30,13 @@ export const extractAudioController = async (req, res) => {
             return res.status(400).send("Invalid YouTube URL");
         }
 
-        const ytDlp = new YtDlp();
         let title = "audio";
         try {
-            const infoProcess = ytDlp.exec(url, {
-                binPath: YTDLP_PATH,
-                dumpJson: true,
-                noWarnings: true,
-                quiet: true,
-                extractorArgs: "youtube:player_client=android",
-                noPlaylist: true,
-            });
-
-            let jsonOutput = "";
-            infoProcess.stdout.on("data", (chunk) => {
-                jsonOutput += chunk.toString();
-            });
-
-            await new Promise((resolve, reject) => {
-                infoProcess.on("close", (code) => {
-                    if (code === 0) {
-                        try {
-                            const info = JSON.parse(jsonOutput);
-                            title = info.title || "audio";
-                            title = safeFilename(title);
-                        } catch (e) {
-                            console.warn("Could not parse JSON:", e.message);
-                        }
-                        resolve();
-                    } else {
-                        reject(new Error(`Process exited with code ${code}`));
-                    }
-                });
-            });
+            const infoCmd = `${YTDLP_PATH} --dump-json --quiet "${url}"`;
+            const infoOutput = execSync(infoCmd, { encoding: 'utf-8' });
+            const info = JSON.parse(infoOutput);
+            title = info.title || "audio";
+            title = safeFilename(title);
         } catch (err) {
             console.warn("Could not fetch video title:", err.message);
         }
@@ -70,21 +44,27 @@ export const extractAudioController = async (req, res) => {
         res.header("Content-Disposition", `attachment; filename="${title}.mp3"`);
         res.header("Content-Type", "audio/mpeg");
 
-        const audioProc = ytDlp.exec(url, {
-            binPath: YTDLP_PATH,
-            extractorArgs: "youtube:player_client=android",
-            noPlaylist: true,
-            extractAudio: true,
-            audioFormat: "mp3",
-            audioQuality: "0",
-            output: "-"
-        });
+        const audioCmd = `${YTDLP_PATH} -x --audio-format mp3 --audio-quality 0 -o - "${url}"`;
+        
+        try {
+            const { spawn } = await import('child_process');
+            const audioProc = spawn('sh', ['-c', audioCmd]);
+            
+            audioProc.stderr.on("data", (d) => {
+                console.error("yt-dlp audio stderr:", d.toString());
+            });
 
-        audioProc.stderr.on("data", d => {
-            console.error("yt-dlp audio stderr:", d.toString());
-        });
+            audioProc.on('error', (err) => {
+                console.error("Audio process error:", err);
+                if (!res.headersSent) {
+                    res.status(500).json({ message: "Audio extraction failed" });
+                }
+            });
 
-        audioProc.stdout.pipe(res);
+            audioProc.stdout.pipe(res);
+        } catch (error) {
+            throw error;
+        }
 
     } catch (error) {
         console.error("Controller error:", error);
@@ -92,7 +72,7 @@ export const extractAudioController = async (req, res) => {
             res.status(500).json({ message: "Internal Server Error", error: error.message });
         }
     }
-}
+};
 
 export const extractVideoController = async (req, res) => {
     try {
@@ -105,82 +85,52 @@ export const extractVideoController = async (req, res) => {
 
         if (!url) return res.status(400).send("Missing URL");
 
-        const ytDlp = new YtDlp();
-
         let title = "video";
         try {
-            const infoProcess = ytDlp.exec(url, {
-                binPath: YTDLP_PATH,
-                extractorArgs: "youtube:player_client=android",
-                dumpJson: true,
-                noWarnings: true,
-                quiet: true,
-                noPlaylist: true,
-            });
-
-            let jsonOutput = "";
-            infoProcess.stdout.on("data", (chunk) => {
-                jsonOutput += chunk.toString();
-            });
-
-            await new Promise((resolve, reject) => {
-                infoProcess.on("close", (code) => {
-                    if (code === 0) {
-                        try {
-                            const info = JSON.parse(jsonOutput);
-                            title = info.title || "video";
-                            title = safeFilename(title);
-                        } catch (e) {
-                            console.warn("Could not parse JSON:", e.message);
-                        }
-                        resolve();
-                    } else {
-                        reject(new Error(`Process exited with code ${code}`));
-                    }
-                });
-            });
+            const infoCmd = `${YTDLP_PATH} --dump-json --quiet "${url}"`;
+            const infoOutput = execSync(infoCmd, { encoding: 'utf-8' });
+            const info = JSON.parse(infoOutput);
+            title = info.title || "video";
+            title = safeFilename(title);
         } catch (err) {
             console.warn("Could not fetch video title:", err.message);
         }
+
         const tempDir = os.tmpdir();
-        const filePath = path.join(
-            tempDir,
-            `${Date.now()}-${title}.mp4`
-        );
+        const filePath = path.join(tempDir, `${Date.now()}-${title}.mp4`);
 
-        const proc = ytDlp.exec(url, {
-            binPath: YTDLP_PATH,
-            extractorArgs: "youtube:player_client=android",
-            format: "bestvideo[height<=1080]+bestaudio/best",
-            mergeOutputFormat: "mp4",
-            ffmpegLocation:
-                process.env.NODE_ENV === "production"
-                    ? "/usr/bin/ffmpeg"
-                    : "C:\\ffmpeg\\bin\\ffmpeg.exe",
-            output: filePath,
-            noPlaylist: true,
-        });
+        const ffmpegPath = process.env.NODE_ENV === "production"
+            ? "/usr/bin/ffmpeg"
+            : "ffmpeg";
 
-        proc.stderr.on("data", d => {
-            console.error("yt-dlp video stderr:", d.toString());
-        });
+        const videoCmd = `${YTDLP_PATH} -f "bestvideo[height<=1080]+bestaudio/best" --ffmpeg-location "${ffmpegPath}" -o "${filePath}" "${url}"`;
 
-        await new Promise((resolve, reject) => {
-            proc.on("close", (code) => {
-                code === 0 ? resolve() : reject();
+        try {
+            execSync(videoCmd, { stdio: 'inherit' });
+
+            if (!fs.existsSync(filePath)) {
+                return res.status(500).send("Video not created");
+            }
+
+            res.download(filePath, () => {
+                fs.unlink(filePath, (err) => {
+                    if (err) console.error("Error deleting temp file:", err);
+                });
             });
-        });
-
-        if (!fs.existsSync(filePath)) {
-            return res.status(500).send("Video not created");
+        } catch (err) {
+            console.error("Video download error:", err.message);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+            if (!res.headersSent) {
+                res.status(500).send("Failed to download video");
+            }
         }
 
-        res.download(filePath, () => {
-            fs.unlink(filePath, () => { });
-        });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Failed to download video");
+    } catch (error) {
+        console.error("Controller error:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: "Internal Server Error", error: error.message });
+        }
     }
 };
