@@ -38,6 +38,8 @@ export const extractAudioController = async (req, res) => {
                 dumpJson: true,
                 noWarnings: true,
                 quiet: true,
+                extractorArgs: "youtube:player_client=android",
+                noPlaylist: true,
             });
 
             let jsonOutput = "";
@@ -68,21 +70,21 @@ export const extractAudioController = async (req, res) => {
         res.header("Content-Disposition", `attachment; filename="${title}.mp3"`);
         res.header("Content-Type", "audio/mpeg");
 
-        ytDlp.exec(url, {
+        const audioProc = ytDlp.exec(url, {
             binPath: YTDLP_PATH,
+            extractorArgs: "youtube:player_client=android",
+            noPlaylist: true,
             extractAudio: true,
             audioFormat: "mp3",
             audioQuality: "0",
             output: "-"
-        })
-            .stdout.pipe(res)
-            .on("error", (err) => {
-                console.error("yt-dlp audio error:", err);
-                if (!res.headersSent) {
-                    res.status(500).send("Failed to extract audio");
-                }
-            });
+        });
 
+        audioProc.stderr.on("data", d => {
+            console.error("yt-dlp audio stderr:", d.toString());
+        });
+
+        audioProc.stdout.pipe(res);
 
     } catch (error) {
         console.error("Controller error:", error);
@@ -109,9 +111,11 @@ export const extractVideoController = async (req, res) => {
         try {
             const infoProcess = ytDlp.exec(url, {
                 binPath: YTDLP_PATH,
+                extractorArgs: "youtube:player_client=android",
                 dumpJson: true,
                 noWarnings: true,
                 quiet: true,
+                noPlaylist: true,
             });
 
             let jsonOutput = "";
@@ -146,13 +150,19 @@ export const extractVideoController = async (req, res) => {
 
         const proc = ytDlp.exec(url, {
             binPath: YTDLP_PATH,
+            extractorArgs: "youtube:player_client=android",
             format: "bestvideo[height<=1080]+bestaudio/best",
             mergeOutputFormat: "mp4",
             ffmpegLocation:
                 process.env.NODE_ENV === "production"
                     ? "/usr/bin/ffmpeg"
                     : "C:\\ffmpeg\\bin\\ffmpeg.exe",
-            output: filePath
+            output: filePath,
+            noPlaylist: true,
+        });
+
+        proc.stderr.on("data", d => {
+            console.error("yt-dlp video stderr:", d.toString());
         });
 
         await new Promise((resolve, reject) => {
