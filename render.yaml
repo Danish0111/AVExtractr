@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: avextractr
+    runtime: node
+    runtimeVersion: 20.19.0
+    buildCommand: |
+      apt-get update && apt-get install -y python3.11 ffmpeg && \
+      npm install && \
+      npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PYTHON
+        value: /usr/bin/python3.11
