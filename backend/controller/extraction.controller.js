@@ -87,6 +87,12 @@ export const extractVideoController = async (req, res) => {
         const url = req.query.url.split("&")[0];
         if (!url) return res.status(400).send("Missing URL");
 
+        const ffmpegPath =
+            process.env.NODE_ENV === "production"
+                ? "/usr/bin/ffmpeg"
+                : "C:\\ffmpeg\\bin\\ffmpeg.exe";
+
+
         const ytDlp = new YtDlp();
 
         let title = "video";
@@ -124,14 +130,15 @@ export const extractVideoController = async (req, res) => {
         const tempDir = os.tmpdir();
         const filePath = path.join(
             tempDir,
-            `${title}.mp4`
+            `${Date.now()}-${title}.mp4`
         );
+
 
         const proc = ytDlp.exec(url, {
             format: "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best",
             mergeOutputFormat: "mp4",
             // ffmpegLocation: "/usr/bin/ffmpeg",
-            ffmpegLocation: "C:\\ffmpeg\\bin\\ffmpeg.exe",
+            ffmpegLocation: ffmpegPath,
             output: filePath,
             noWarnings: true,
             quiet: true,
