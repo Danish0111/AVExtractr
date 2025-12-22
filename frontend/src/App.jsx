@@ -4,15 +4,15 @@ import './App.css';
 function App() {
   const [url, setUrl] = useState("");
 
-  const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5000" : "/"
 
   const downloadAudio = () => {
-    window.open(`${BASE_URL}/api/extract-audio?url=${url}`);
+    const encodedUrl = encodeURIComponent(url);
+    window.open(`/api/extract-audio?url=${encodedUrl}`);
   };
 
   const downloadVideo = () => {
     const encodedUrl = encodeURIComponent(url);
-    window.open(`${BASE_URL}/api/extract-video?url=${encodedUrl}`);
+    window.open(`/api/extract-video?url=${encodedUrl}`);
   };
 
   return (
@@ -31,7 +31,7 @@ function App() {
       </p>
 
       <div className="w-full max-w-md bg-white rounded-lg p-4 sm:p-6 space-y-4 shadow-lg">
-        
+
         <div className="flex flex-col">
           <label htmlFor="url" className="text-sm font-semibold mb-2">
             YouTube URL
