@@ -1,21 +1,26 @@
-import express from 'express';
-import cors from 'cors';
-import extractionRoute from './routes/extraction.route.js';
+import express from "express";
+import cors from "cors";
+import extractionRoute from "./routes/extraction.route.js";
 import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 app.use(cors());
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 5000;
 
 app.use("/api", extractionRoute);
 
-if(process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../frontend/dist")));
-  app.get("/*splat", (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
-  });
-}
+const frontendPath = path.join(__dirname, "../frontend/dist");
+
+app.use(express.static(frontendPath));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
