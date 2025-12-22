@@ -12,9 +12,19 @@ function safeFilename(name) {
         .substring(0, 100);
 }
 
+const YTDLP_PATH =
+    process.env.NODE_ENV === "production"
+        ? "/usr/local/bin/yt-dlp"
+        : "yt-dlp";
+
 export const extractAudioController = async (req, res) => {
     try {
-        const url = req.query.url.split("&")[0];
+        let url = decodeURIComponent(req.query.url);
+
+        if (url.includes("/shorts/")) {
+            const id = url.split("/shorts/")[1].split("?")[0];
+            url = `https://www.youtube.com/watch?v=${id}`;
+        }
 
         if (!url || (!url.includes("youtube.com") && !url.includes("youtu.be"))) {
             return res.status(400).send("Invalid YouTube URL");
@@ -24,6 +34,7 @@ export const extractAudioController = async (req, res) => {
         let title = "audio";
         try {
             const infoProcess = ytDlp.exec(url, {
+                binPath: YTDLP_PATH,
                 dumpJson: true,
                 noWarnings: true,
                 quiet: true,
@@ -57,22 +68,21 @@ export const extractAudioController = async (req, res) => {
         res.header("Content-Disposition", `attachment; filename="${title}.mp3"`);
         res.header("Content-Type", "audio/mpeg");
 
-
         ytDlp.exec(url, {
+            binPath: YTDLP_PATH,
             extractAudio: true,
             audioFormat: "mp3",
             audioQuality: "0",
-            quiet: true,
-            noWarnings: true,
-            output: "-",
+            output: "-"
         })
             .stdout.pipe(res)
             .on("error", (err) => {
-                console.error("Stream error:", err.message);
+                console.error("yt-dlp audio error:", err);
                 if (!res.headersSent) {
                     res.status(500).send("Failed to extract audio");
                 }
             });
+
 
     } catch (error) {
         console.error("Controller error:", error);
@@ -84,21 +94,21 @@ export const extractAudioController = async (req, res) => {
 
 export const extractVideoController = async (req, res) => {
     try {
-        const url = req.query.url.split("&")[0];
+        let url = decodeURIComponent(req.query.url);
+
+        if (url.includes("/shorts/")) {
+            const id = url.split("/shorts/")[1].split("?")[0];
+            url = `https://www.youtube.com/watch?v=${id}`;
+        }
+
         if (!url) return res.status(400).send("Missing URL");
-
-        const ffmpegPath =
-            process.env.NODE_ENV === "production"
-                ? "/usr/bin/ffmpeg"
-                : "C:\\ffmpeg\\bin\\ffmpeg.exe";
-
-
 
         const ytDlp = new YtDlp();
 
         let title = "video";
         try {
             const infoProcess = ytDlp.exec(url, {
+                binPath: YTDLP_PATH,
                 dumpJson: true,
                 noWarnings: true,
                 quiet: true,
@@ -134,15 +144,15 @@ export const extractVideoController = async (req, res) => {
             `${Date.now()}-${title}.mp4`
         );
 
-
         const proc = ytDlp.exec(url, {
-            format: "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best",
+            binPath: YTDLP_PATH,
+            format: "bestvideo[height<=1080]+bestaudio/best",
             mergeOutputFormat: "mp4",
-            // ffmpegLocation: "/usr/bin/ffmpeg",
-            ffmpegLocation: ffmpegPath,
-            output: filePath,
-            noWarnings: true,
-            quiet: true,
+            ffmpegLocation:
+                process.env.NODE_ENV === "production"
+                    ? "/usr/bin/ffmpeg"
+                    : "C:\\ffmpeg\\bin\\ffmpeg.exe",
+            output: filePath
         });
 
         await new Promise((resolve, reject) => {
