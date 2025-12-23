@@ -1,6 +1,6 @@
-FROM node:18-bullseye
+FROM node:20-bullseye
 
-# Install ffmpeg & curl
+# Install system deps
 RUN apt-get update && apt-get install -y ffmpeg curl
 
 # Install yt-dlp
@@ -11,17 +11,13 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-RUN npm install
-
-# Copy rest of the project
+# Copy entire project
 COPY . .
 
-# Build frontend
+# Install dependencies + build frontend
 RUN npm run build
 
-# Expose port
+# Expose backend port
 EXPOSE 5000
 
 # Start backend

@@ -4,15 +4,16 @@ import './App.css';
 function App() {
   const [url, setUrl] = useState("");
 
+  const BASE_URL = import.meta.env.NODE_ENV === "production" ? "/" : "http://localhost:5000/";
 
   const downloadAudio = () => {
     const encodedUrl = encodeURIComponent(url);
-    window.open(`/api/extract-audio?url=${encodedUrl}`);
+    window.open(`${BASE_URL}api/extract-audio?url=${encodedUrl}`);
   };
 
   const downloadVideo = () => {
     const encodedUrl = encodeURIComponent(url);
-    window.open(`/api/extract-video?url=${encodedUrl}`);
+    window.open(`${BASE_URL}api/extract-video?url=${encodedUrl}`);
   };
 
   return (
