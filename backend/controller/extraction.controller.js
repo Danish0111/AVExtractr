@@ -187,6 +187,20 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
+const COOKIES_FILE = path.join(os.tmpdir(), "youtube_cookies.txt");
+
+const DEFAULT_COOKIES = `# Netscape HTTP Cookie File
+# This is a generated file!  Do not edit.
+
+.youtube.com	TRUE	/	TRUE	0	PREF	f1=50000000&f6=40000000
+.youtube.com	TRUE	/	TRUE	0	__Secure-1PSID	YOUR_PSID_HERE
+.youtube.com	TRUE	/	TRUE	0	__Secure-1PSIDTS	YOUR_PSIDTS_HERE
+`;
+
+if (!fs.existsSync(COOKIES_FILE)) {
+  fs.writeFileSync(COOKIES_FILE, DEFAULT_COOKIES);
+}
+
 export const extractAudioController = async (req, res) => {
   try {
     let url = decodeURIComponent(req.query.url || "");
@@ -206,8 +220,11 @@ export const extractAudioController = async (req, res) => {
     const yt = spawn(ytDlpPath, [
       "-f", "bestaudio",
       "-o", "-",
+      "--no-warnings",
+      "-q",
+      "-R", "5",
       "--socket-timeout", "30",
-      "--extractor-args", "youtube:player_client=web_creator",
+      "--http-headers", "User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       url
     ]);
 
@@ -307,8 +324,11 @@ export const extractVideoController = async (req, res) => {
       "-f", "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
       "--merge-output-format", "mp4",
       "--ffmpeg-location", ffmpegPath,
+      "--no-warnings",
+      "-q",
+      "-R", "5",
       "--socket-timeout", "30",
-      "--extractor-args", "youtube:player_client=web_creator",
+      "--http-headers", "User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       "-o", filePath,
       url
     ]);

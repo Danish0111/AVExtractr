@@ -1,7 +1,8 @@
 FROM node:20-bookworm
 
-# Install system deps (bookworm has Python 3.11+)
-RUN apt-get update && apt-get install -y ffmpeg curl
+# Install system deps + Python yt-dlp
+RUN apt-get update && apt-get install -y ffmpeg curl python3-pip && \
+    pip install yt-dlp
 
 # Install yt-dlp
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
