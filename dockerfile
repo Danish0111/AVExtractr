@@ -1,13 +1,12 @@
 FROM node:20-bookworm
 
-# Install system deps + Python yt-dlp
-RUN apt-get update && apt-get install -y ffmpeg curl python3-pip && \
-    pip install yt-dlp
+# Install system deps + yt-dlp via binary
+RUN apt-get update && apt-get install -y ffmpeg curl wget
 
-# Install yt-dlp
+# Download yt-dlp binary directly
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
-    -o /usr/local/bin/yt-dlp \
-    && chmod a+rx /usr/local/bin/yt-dlp
+    -o /usr/local/bin/yt-dlp && \
+    chmod +x /usr/local/bin/yt-dlp
 
 # Set working directory
 WORKDIR /app

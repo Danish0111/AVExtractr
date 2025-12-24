@@ -14,7 +14,7 @@
 
 // const YTDLP_PATH =
 //     process.env.NODE_ENV === "production"
-//         ? "/usr/local/bin/yt-dlp"
+//         ? "yt-dlp"
 //         : "yt-dlp";
 
 // export const extractAudioController = async (req, res) => {
@@ -212,7 +212,7 @@ export const extractAudioController = async (req, res) => {
       url = `https://www.youtube.com/watch?v=${id}`;
     }
 
-    const ytDlpPath = "/usr/local/bin/yt-dlp";
+    const ytDlpPath = "yt-dlp";
     const ffmpegPath = "/usr/bin/ffmpeg";
 
     const outPath = path.join(os.tmpdir(), `${Date.now()}_audio.mp3`);
@@ -315,7 +315,7 @@ export const extractVideoController = async (req, res) => {
       url = `https://www.youtube.com/watch?v=${id}`;
     }
 
-    const ytDlpPath = "/usr/local/bin/yt-dlp";
+    const ytDlpPath = "yt-dlp";
     const ffmpegPath = "/usr/bin/ffmpeg";
 
     const filePath = path.join(os.tmpdir(), `${Date.now()}_video.mp4`);
