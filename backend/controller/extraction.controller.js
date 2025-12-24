@@ -206,6 +206,8 @@ export const extractAudioController = async (req, res) => {
     const yt = spawn(ytDlpPath, [
       "-f", "bestaudio",
       "-o", "-",
+      "--socket-timeout", "30",
+      "--extractor-args", "youtube:player_client=web_creator",
       url
     ]);
 
@@ -305,6 +307,8 @@ export const extractVideoController = async (req, res) => {
       "-f", "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
       "--merge-output-format", "mp4",
       "--ffmpeg-location", ffmpegPath,
+      "--socket-timeout", "30",
+      "--extractor-args", "youtube:player_client=web_creator",
       "-o", filePath,
       url
     ]);
