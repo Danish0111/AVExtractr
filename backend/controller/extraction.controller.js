@@ -14,7 +14,7 @@
 
 // const YTDLP_PATH =
 //     process.env.NODE_ENV === "production"
-//         ? "yt-dlp"
+//         ? "/usr/local/bin/yt-dlp"
 //         : "yt-dlp";
 
 // export const extractAudioController = async (req, res) => {
@@ -182,205 +182,306 @@
 //     }
 // };
 
-import { spawn } from "child_process";
+
+// import { spawn } from "child_process";
+// import fs from "fs";
+// import path from "path";
+// import os from "os";
+
+// function sanitizeFilename(name) {
+//   return name
+//     .replace(/[\r\n]+/g, " ")
+//     .replace(/[<>:"/\\|?*]+/g, "")
+//     .replace(/[^\x20-\x7E]/g, "")
+//     .trim()
+//     .substring(0, 100);
+// }
+
+// export const extractAudioController = async (req, res) => {
+//   try {
+//     let url = decodeURIComponent(req.query.url || "");
+    
+//     if (!url) return res.status(400).send("Missing URL");
+
+//     if (url.includes("/shorts/")) {
+//       const id = url.split("/shorts/")[1].split("?")[0];
+//       url = `https://www.youtube.com/watch?v=${id}`;
+//     }
+
+//     const ffmpegPath = process.env.NODE_ENV === "production" 
+//       ? "/usr/bin/ffmpeg"
+//       : "C:\\ffmpeg\\bin\\ffmpeg.exe";
+
+//     const outPath = path.join(os.tmpdir(), `${Date.now()}_audio.mp3`);
+
+//     // Use yt-dlp to download bestaudio and pipe to ffmpeg
+//     const yt = spawn("yt-dlp", [
+//       "-f", "bestaudio",
+//       "-o", "-",
+//       "-q",
+//       url
+//     ]);
+
+//     const ffmpeg = spawn(ffmpegPath, [
+//       "-i", "pipe:0",
+//       "-vn",
+//       "-acodec", "libmp3lame",
+//       "-ab", "192k",
+//       "-f", "mp3",
+//       outPath
+//     ]);
+
+//     let errorMsg = "";
+
+//     yt.stderr.on("data", (d) => {
+//       console.error("[yt-dlp]", d.toString().trim());
+//     });
+
+//     ffmpeg.stderr.on("data", (d) => {
+//       errorMsg += d.toString();
+//     });
+
+//     // Pipe yt-dlp output to ffmpeg
+//     yt.stdout.pipe(ffmpeg.stdin);
+
+//     yt.on("error", (error) => {
+//       ffmpeg.kill();
+//       if (!res.headersSent) {
+//         res.status(500).send(`Download failed: ${error.message}`);
+//       }
+//     });
+
+//     ffmpeg.on("error", (error) => {
+//       if (!res.headersSent) {
+//         res.status(500).send(`Conversion failed: ${error.message}`);
+//       }
+//     });
+
+//     ffmpeg.on("close", (code) => {
+//       if (code !== 0) {
+//         console.error("ffmpeg error:", errorMsg);
+//         if (!res.headersSent) {
+//           res.status(500).send("Audio conversion failed");
+//         }
+//         return;
+//       }
+
+//       setTimeout(() => {
+//         if (!fs.existsSync(outPath)) {
+//           res.status(500).send("MP3 file not created");
+//           return;
+//         }
+
+//         const stats = fs.statSync(outPath);
+
+//         res.setHeader("Content-Type", "audio/mpeg");
+//         res.setHeader("Content-Disposition", `attachment; filename="audio.mp3"`);
+//         res.setHeader("Content-Length", stats.size);
+
+//         const stream = fs.createReadStream(outPath);
+//         stream.pipe(res);
+
+//         stream.on("error", () => {
+//           fs.unlink(outPath, () => {});
+//         });
+
+//         res.on("finish", () => {
+//           fs.unlink(outPath, () => {});
+//         });
+//       }, 500);
+//     });
+
+//   } catch (error) {
+//     console.error("Audio controller error:", error);
+//     if (!res.headersSent) {
+//       res.status(500).json({ error: error.message });
+//     }
+//   }
+// };
+
+// export const extractVideoController = async (req, res) => {
+//   try {
+//     let url = decodeURIComponent(req.query.url || "");
+
+//     if (!url) return res.status(400).send("Missing URL");
+
+//     if (url.includes("/shorts/")) {
+//       const id = url.split("/shorts/")[1].split("?")[0];
+//       url = `https://www.youtube.com/watch?v=${id}`;
+//     }
+
+//     const ffmpegPath = process.env.NODE_ENV === "production" 
+//       ? "/usr/bin/ffmpeg"
+//       : "C:\\ffmpeg\\bin\\ffmpeg.exe";
+
+//     const filePath = path.join(os.tmpdir(), `${Date.now()}_video.mp4`);
+
+//     const yt = spawn("yt-dlp", [
+//       "-f", "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
+//       "--merge-output-format", "mp4",
+//       "--ffmpeg-location", ffmpegPath,
+//       "-o", filePath,
+//       "-q",
+//       url
+//     ]);
+
+//     let errorMsg = "";
+
+//     yt.stderr.on("data", (d) => {
+//       console.error("[yt-dlp]", d.toString().trim());
+//       errorMsg += d.toString();
+//     });
+
+//     yt.on("error", (error) => {
+//       if (!res.headersSent) {
+//         res.status(500).send(`Download failed: ${error.message}`);
+//       }
+//     });
+
+//     yt.on("close", (code) => {
+//       if (code !== 0) {
+//         console.error("yt-dlp error:", errorMsg);
+//         if (!res.headersSent) {
+//           res.status(500).send("Video download failed");
+//         }
+//         return;
+//       }
+
+//       setTimeout(() => {
+//         if (!fs.existsSync(filePath)) {
+//           res.status(500).send("Video file not created");
+//           return;
+//         }
+
+//         const stats = fs.statSync(filePath);
+
+//         res.setHeader("Content-Type", "video/mp4");
+//         res.setHeader("Content-Disposition", `attachment; filename="video.mp4"`);
+//         res.setHeader("Content-Length", stats.size);
+
+//         const stream = fs.createReadStream(filePath);
+//         stream.pipe(res);
+
+//         stream.on("error", () => {
+//           fs.unlink(filePath, () => {});
+//         });
+
+//         res.on("finish", () => {
+//           fs.unlink(filePath, () => {});
+//         });
+//       }, 500);
+//     });
+
+//   } catch (error) {
+//     console.error("Video controller error:", error);
+//     if (!res.headersSent) {
+//       res.status(500).json({ error: error.message });
+//     }
+//   }
+// };
+
 import fs from "fs";
-import path from "path";
-import os from "os";
+import { extractMedia } from "../helpers/youtube.js";
 
-// YouTube cookies file path
-const COOKIES_FILE = path.join(os.tmpdir(), "youtube_cookies.txt");
-
-// Default cookies format for yt-dlp
-const DEFAULT_COOKIES = `# Netscape HTTP Cookie File
-# This is a generated file!  Do not edit.
-
-.youtube.com	TRUE	/	TRUE	0	PREF	f1=50000000&f6=40000000
-.youtube.com	TRUE	/	TRUE	0	__Secure-1PSID	YOUR_PSID_HERE
-.youtube.com	TRUE	/	TRUE	0	__Secure-1PSIDTS	YOUR_PSIDTS_HERE
-`;
-
-// Create cookies file if it doesn't exist
-if (!fs.existsSync(COOKIES_FILE)) {
-  fs.writeFileSync(COOKIES_FILE, DEFAULT_COOKIES);
+function sanitizeFilename(name) {
+  return name
+    .replace(/[\r\n]+/g, " ")
+    .replace(/[<>:"/\\|?*]+/g, "")
+    .replace(/[^\x20-\x7E]/g, "")
+    .trim()
+    .substring(0, 100);
 }
 
 export const extractAudioController = async (req, res) => {
   try {
-    let url = decodeURIComponent(req.query.url || "");
-    
+    const url = decodeURIComponent(req.query.url || "");
     if (!url) return res.status(400).send("Missing URL");
 
-    if (url.includes("/shorts/")) {
-      const id = url.split("/shorts/")[1].split("?")[0];
-      url = `https://www.youtube.com/watch?v=${id}`;
+    console.log(`[Audio] Extracting: ${url}`);
+    const result = await extractMedia("audio", url);
+    
+    const { file, filename } = result;
+    const safeFilename = sanitizeFilename(filename);
+    
+    console.log(`[Audio] File: ${file}`);
+    console.log(`[Audio] Filename: ${safeFilename}`);
+    console.log(`[Audio] File exists: ${fs.existsSync(file)}`);
+
+    if (!fs.existsSync(file)) {
+      return res.status(500).send("File not found");
     }
 
-    const ytDlpPath = "/usr/local/bin/yt-dlp";
-    const ffmpegPath = "/usr/bin/ffmpeg";
+    const stats = fs.statSync(file);
+    console.log(`[Audio] Size: ${stats.size} bytes`);
 
-    const outPath = path.join(os.tmpdir(), `${Date.now()}_audio.mp3`);
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}"`);
+    res.setHeader("Content-Length", stats.size);
 
-    const yt = spawn(ytDlpPath, [
-      "-f", "bestaudio",
-      "-o", "-",
-      "--no-warnings",
-      "-q",
-      "-R", "5",
-      "--socket-timeout", "30",
-      url
-    ]);
+    const stream = fs.createReadStream(file);
+    stream.pipe(res);
 
-    const ffmpeg = spawn(ffmpegPath, [
-      "-f", "webm",
-      "-i", "pipe:0",
-      "-vn",
-      "-acodec", "libmp3lame",
-      "-ab", "192k",
-      "-f", "mp3",
-      outPath
-    ]);
-
-    let ffmpegStderr = "";
-
-    yt.stderr.on("data", d => {
-      console.error("[yt-dlp stderr]", d.toString().trim());
+    stream.on("error", (err) => {
+      console.error("[Audio] Stream error:", err);
+      fs.unlink(file, () => {});
     });
 
-    ffmpeg.stderr.on("data", d => {
-      ffmpegStderr += d.toString();
-    });
-
-    yt.stdout.pipe(ffmpeg.stdin);
-
-    yt.on("error", (error) => {
-      ffmpeg.kill();
-      if (!res.headersSent) {
-        res.status(500).send(`yt-dlp error: ${error.message}`);
-      }
-    });
-
-    ffmpeg.on("error", (error) => {
-      if (!res.headersSent) {
-        res.status(500).send(`ffmpeg error: ${error.message}`);
-      }
-    });
-
-    ffmpeg.on("close", (code) => {
-      if (code !== 0) {
-        if (!res.headersSent) {
-          res.status(500).send(`Conversion failed with code ${code}`);
-        }
-        return;
-      }
-
-      setTimeout(() => {
-        if (!fs.existsSync(outPath)) {
-          res.status(500).send("MP3 file not created");
-          return;
-        }
-
-        const stats = fs.statSync(outPath);
-
-        res.setHeader("Content-Type", "audio/mpeg");
-        res.setHeader("Content-Disposition", `attachment; filename="audio.mp3"`);
-        res.setHeader("Content-Length", stats.size);
-
-        const stream = fs.createReadStream(outPath);
-        stream.pipe(res);
-
-        stream.on("error", () => {
-          fs.unlink(outPath, () => {});
-        });
-
-        res.on("finish", () => {
-          fs.unlink(outPath, () => {});
-        });
-      }, 300);
+    res.on("finish", () => {
+      console.log("[Audio] Download complete, cleaning up");
+      fs.unlink(file, () => {});
     });
 
   } catch (error) {
-    console.error("Audio controller error:", error);
+    console.error("Audio error:", error.message);
     if (!res.headersSent) {
-      res.status(500).json({ message: "Internal Server Error", error: error.message });
+      res.status(500).json({ error: error.message });
     }
   }
 };
 
 export const extractVideoController = async (req, res) => {
   try {
-    let url = decodeURIComponent(req.query.url || "");
-
+    const url = decodeURIComponent(req.query.url || "");
     if (!url) return res.status(400).send("Missing URL");
 
-    if (url.includes("/shorts/")) {
-      const id = url.split("/shorts/")[1].split("?")[0];
-      url = `https://www.youtube.com/watch?v=${id}`;
+    console.log(`[Video] Extracting: ${url}`);
+    const result = await extractMedia("video", url);
+    
+    const { file, filename } = result;
+    const safeFilename = sanitizeFilename(filename);
+    
+    console.log(`[Video] File: ${file}`);
+    console.log(`[Video] Filename: ${safeFilename}`);
+    console.log(`[Video] File exists: ${fs.existsSync(file)}`);
+
+    if (!fs.existsSync(file)) {
+      return res.status(500).send("File not found");
     }
 
-    const ytDlpPath = "/usr/local/bin/yt-dlp";
-    const ffmpegPath = "/usr/bin/ffmpeg";
+    const stats = fs.statSync(file);
+    console.log(`[Video] Size: ${stats.size} bytes`);
 
-    const filePath = path.join(os.tmpdir(), `${Date.now()}_video.mp4`);
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}"`);
+    res.setHeader("Content-Length", stats.size);
 
-    const yt = spawn(ytDlpPath, [
-      "-f", "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
-      "--merge-output-format", "mp4",
-      "--ffmpeg-location", ffmpegPath,
-      "--no-warnings",
-      "-q",
-      "-R", "5",
-      "--socket-timeout", "30",
-      "-o", filePath,
-      url
-    ]);
+    const stream = fs.createReadStream(file);
+    stream.pipe(res);
 
-    yt.stderr.on("data", d => {
-      console.error("[yt-dlp stderr]", d.toString().trim());
+    stream.on("error", (err) => {
+      console.error("[Video] Stream error:", err);
+      fs.unlink(file, () => {});
     });
 
-    yt.on("error", (error) => {
-      if (!res.headersSent) {
-        res.status(500).send(`yt-dlp error: ${error.message}`);
-      }
-    });
-
-    yt.on("close", code => {
-      if (code !== 0) {
-        if (!res.headersSent) {
-          res.status(500).send(`Video download failed with code ${code}`);
-        }
-        return;
-      }
-
-      setTimeout(() => {
-        if (!fs.existsSync(filePath)) {
-          res.status(500).send("Video file not created");
-          return;
-        }
-
-        const stats = fs.statSync(filePath);
-
-        res.setHeader("Content-Type", "video/mp4");
-        res.setHeader("Content-Disposition", `attachment; filename="video.mp4"`);
-        res.setHeader("Content-Length", stats.size);
-
-        const stream = fs.createReadStream(filePath);
-        stream.pipe(res);
-
-        stream.on("error", () => {
-          fs.unlink(filePath, () => {});
-        });
-
-        res.on("finish", () => {
-          fs.unlink(filePath, () => {});
-        });
-      }, 300);
+    res.on("finish", () => {
+      console.log("[Video] Download complete, cleaning up");
+      fs.unlink(file, () => {});
     });
 
   } catch (error) {
-    console.error("Video controller error:", error);
+    console.error("Video error:", error.message);
     if (!res.headersSent) {
-      res.status(500).json({ message: "Internal Server Error", error: error.message });
+      res.status(500).json({ error: error.message });
     }
   }
 };
