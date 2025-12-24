@@ -1,6 +1,6 @@
-FROM node:20-bullseye
+FROM node:20-bookworm
 
-# Install system deps
+# Install system deps (bookworm has Python 3.11+)
 RUN apt-get update && apt-get install -y ffmpeg curl
 
 # Install yt-dlp
