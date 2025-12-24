@@ -187,8 +187,10 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
+// YouTube cookies file path
 const COOKIES_FILE = path.join(os.tmpdir(), "youtube_cookies.txt");
 
+// Default cookies format for yt-dlp
 const DEFAULT_COOKIES = `# Netscape HTTP Cookie File
 # This is a generated file!  Do not edit.
 
@@ -197,6 +199,7 @@ const DEFAULT_COOKIES = `# Netscape HTTP Cookie File
 .youtube.com	TRUE	/	TRUE	0	__Secure-1PSIDTS	YOUR_PSIDTS_HERE
 `;
 
+// Create cookies file if it doesn't exist
 if (!fs.existsSync(COOKIES_FILE)) {
   fs.writeFileSync(COOKIES_FILE, DEFAULT_COOKIES);
 }
@@ -212,7 +215,7 @@ export const extractAudioController = async (req, res) => {
       url = `https://www.youtube.com/watch?v=${id}`;
     }
 
-    const ytDlpPath = "yt-dlp";
+    const ytDlpPath = "/usr/local/bin/yt-dlp";
     const ffmpegPath = "/usr/bin/ffmpeg";
 
     const outPath = path.join(os.tmpdir(), `${Date.now()}_audio.mp3`);
@@ -224,7 +227,6 @@ export const extractAudioController = async (req, res) => {
       "-q",
       "-R", "5",
       "--socket-timeout", "30",
-      "--http-headers", "User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       url
     ]);
 
@@ -315,7 +317,7 @@ export const extractVideoController = async (req, res) => {
       url = `https://www.youtube.com/watch?v=${id}`;
     }
 
-    const ytDlpPath = "yt-dlp";
+    const ytDlpPath = "/usr/local/bin/yt-dlp";
     const ffmpegPath = "/usr/bin/ffmpeg";
 
     const filePath = path.join(os.tmpdir(), `${Date.now()}_video.mp4`);
@@ -328,7 +330,6 @@ export const extractVideoController = async (req, res) => {
       "-q",
       "-R", "5",
       "--socket-timeout", "30",
-      "--http-headers", "User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       "-o", filePath,
       url
     ]);
