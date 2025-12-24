@@ -1,14 +1,15 @@
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
+import os from "os";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PYTHON_SCRIPT = path.join(__dirname, "../youtube_utils.py");
 
 export const extractMedia = (mode, url) => {
   return new Promise((resolve, reject) => {
-    // Use python3 on production (Render), python on local Windows
-    const pythonPath = process.env.NODE_ENV === "production" ? "python3" : "python";
+    // Use python3 on Linux/Mac, python on Windows
+    const pythonPath = os.platform() === "win32" ? "python" : "python3";
     
     console.log(`[Helper] Using Python: ${pythonPath}`);
     console.log(`[Helper] Script: ${PYTHON_SCRIPT}`);
